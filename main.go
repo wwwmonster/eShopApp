@@ -2,20 +2,18 @@ package main
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/wwwmonster/eShopApp/go/v2/configs"
+	"github.com/wwwmonster/eShopApp/go/v2/internal/api"
 )
 
 func main() {
-	fmt.Println("teste")
-	fmt.Println("2222")
-
-	configs.LoadAppSettings()
-	app := fiber.New()
-
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("for testing only")
-	})
-	app.Listen(":9000")
+	fmt.Println("start main...")
+	config, err := configs.SetupEnv()
+	if err != nil {
+		os.Exit(0)
+	}
+	api.StartServer(config)
+	//	testing.Testing()
 }
