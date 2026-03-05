@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/wwwmonster/eShopApp/go/v2/configs"
@@ -10,6 +11,7 @@ import (
 
 func main() {
 	fmt.Println("start main...")
+	log.Println("============")
 	config, err := configs.SetupEnv()
 	if err != nil {
 		os.Exit(0)

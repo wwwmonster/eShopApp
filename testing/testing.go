@@ -98,6 +98,11 @@ func mainTest1() {
 func printSlice(s []int) {
 	fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
 	fmt.Println("tes")
+	john := student{
+		name: "John",
+		age:  12,
+	}
+	john.sayName()
 }
 
 func testVim(i int) {
@@ -107,4 +112,13 @@ func testVim(i int) {
 	fmt.Println("tet:", i)
 	fmt.Println("tet:", i)
 	fmt.Println("tet:", i)
+}
+
+type student struct {
+	name string
+	age  int
+}
+
+func (std *student) sayName() {
+	fmt.Println(std.name)
 }
