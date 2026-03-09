@@ -6,16 +6,22 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest"
+	"github.com/wwwmonster/eShopApp/go/v2/internal/dto"
+	"github.com/wwwmonster/eShopApp/go/v2/internal/service"
 )
 
 type UserHandler struct {
 	// service
+	svc service.UserService
 }
 
 func SetupUserRoutes(rh *rest.RestHandler) {
 	fmt.Println("sur: ", rh)
+	svc := service.UserService{}
+	fmt.Printf("svc point address ---1---: %p\n", &svc)
+
 	app := rh.App
-	userHandler := UserHandler{}
+	userHandler := UserHandler{svc: svc}
 	app.Post("/register", userHandler.Register)
 	app.Post("/login", userHandler.Login)
 
@@ -39,14 +45,22 @@ type UserData struct {
 }
 
 func (h *UserHandler) Register(ctx *fiber.Ctx) error {
-	ud := new(UserData)
-	if err := ctx.BodyParser(ud); err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).SendString("Failed to parse JSON")
+	fmt.Printf("svc point address ---2---: %p\n", &h.svc)
+
+	user := new(dto.UserRegister)
+	if err := ctx.BodyParser(user); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).SendString("Failed to parse JSON")
 	}
 
-	fmt.Println(ud)
+	fmt.Println(user.Email)
+	token, err := h.svc.Register(user)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).SendString("Failed to login")
+	}
+	//	return ctx.Status(http.StatusOK).JSON(dbuser)
+
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is register...",
+		"message": "this is register token: " + token,
 	})
 }
 
