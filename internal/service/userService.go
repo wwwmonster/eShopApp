@@ -4,18 +4,30 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/google/uuid"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/domain"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/dto"
+	"github.com/wwwmonster/eShopApp/go/v2/internal/repository"
 )
 
 type UserService struct {
-	// repo
+	Repo repository.UserRepository
 }
 
 func (s UserService) Register(input *dto.UserRegister) (string, error) {
 	log.Println(input)
-	return uuid.New().String(), nil
+
+	newUser, err := s.Repo.CreateUser(domain.User{
+		Password: input.Password,
+		Email:    input.Email,
+		Phone:    input.Phone,
+	})
+	if err != nil {
+		return "", nil
+	}
+
+	newUserInfo := fmt.Sprintf("%v", newUser.ID, newUser.Email, newUser.UserType)
+
+	return newUserInfo, nil
 }
 
 func (s UserService) FindUserByEmail(input *dto.UserRegister, email string) (*domain.User, error) {
@@ -28,7 +40,6 @@ func (s UserService) FindUserByEmail(input *dto.UserRegister, email string) (*do
 		LastName:  "Li",
 		Email:     "alexLi@gmail.com",
 	}
-
 	return &user, nil
 }
 

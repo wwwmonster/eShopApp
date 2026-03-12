@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/dto"
+	"github.com/wwwmonster/eShopApp/go/v2/internal/repository"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/service"
 )
 
@@ -17,7 +18,7 @@ type UserHandler struct {
 
 func SetupUserRoutes(rh *rest.RestHandler) {
 	fmt.Println("sur: ", rh)
-	svc := service.UserService{}
+	svc := service.UserService{Repo: repository.NewUserRepository(rh.Db)}
 	fmt.Printf("svc point address ---1---: %p\n", &svc)
 
 	app := rh.App

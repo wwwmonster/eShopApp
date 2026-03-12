@@ -2,7 +2,6 @@
 package api
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,21 +10,29 @@ import (
 	"github.com/wwwmonster/eShopApp/go/v2/configs"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest/handlers"
+	"github.com/wwwmonster/eShopApp/go/v2/internal/domain"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func StartServer(config configs.AppConfig) {
-	app := fiber.New()
-	log.Println("------fiber server started")
-	//	var err error
+	log.Println("config DSN: ", config.Dsn)
+	db, err := gorm.Open(postgres.Open(config.Dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatal("database connection error ")
+		os.Exit(0)
+	}
+	db.AutoMigrate(&domain.User{})
+	log.Println("db connection: ", db)
 
+	app := fiber.New()
 	app.Get("/health", HealthCheck)
 
-	restHandler := &rest.RestHandler{
-		app,
-	}
-	fmt.Println("==============")
 	//	handlers.SetupUserRoutes(&restHandler)
-	setupRoutes(restHandler)
+	setupRoutes(&rest.RestHandler{
+		app,
+		db,
+	})
 	if err := app.Listen(config.ServerPort); err != nil {
 		os.Exit(0)
 	}
