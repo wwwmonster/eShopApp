@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,26 +18,29 @@ type UserHandler struct {
 }
 
 func SetupUserRoutes(rh *rest.RestHandler) {
-	fmt.Println("sur: ", rh)
-	svc := service.UserService{Repo: repository.NewUserRepository(rh.Db)}
+	svc := service.UserService{Repo: repository.NewUserRepository(rh.Db), Auth: rh.Auth}
+	svc1 := service.UserService{Repo: repository.NewUserRepositorySqlc(rh.ConnPool), Auth: rh.Auth}
 	fmt.Printf("svc point address ---1---: %p\n", &svc)
+	fmt.Printf("svc1 point address ---1---: %p\n", &svc1)
 
 	app := rh.App
 	userHandler := UserHandler{svc: svc}
-	app.Post("/register", userHandler.Register)
-	app.Post("/login", userHandler.Login)
+	pubRoutes := app.Group("/users")
+	pubRoutes.Post("/register", userHandler.Register)
+	pubRoutes.Post("/login", userHandler.Login)
 
-	app.Get("/verify", userHandler.GetVerificationCode)
-	app.Post("/verify", userHandler.Verify)
-	app.Get("/profile", userHandler.GetProfile)
-	app.Post("/profile", userHandler.CreateProfile)
+	pvtRoutes := pubRoutes.Group("/", rh.Auth.Authorize)
+	pvtRoutes.Get("/verify", userHandler.GetVerificationCode)
+	pvtRoutes.Post("/verify", userHandler.Verify)
+	pvtRoutes.Get("/profile", userHandler.GetProfile)
+	pvtRoutes.Post("/profile", userHandler.CreateProfile)
 
-	app.Post("/cart", userHandler.AddToCart)
-	app.Get("/cart", userHandler.GetCart)
-	app.Get("/order", userHandler.Register)
-	app.Get("/order/:id", userHandler.Register)
+	pvtRoutes.Post("/cart", userHandler.AddToCart)
+	pvtRoutes.Get("/cart", userHandler.GetCart)
+	pvtRoutes.Get("/order", userHandler.Register)
+	pvtRoutes.Get("/order/:id", userHandler.Register)
 
-	app.Post("/become-seller", userHandler.BecomeSeller)
+	pvtRoutes.Post("/become-seller", userHandler.BecomeSeller)
 }
 
 type UserData struct {
@@ -46,28 +50,42 @@ type UserData struct {
 }
 
 func (h *UserHandler) Register(ctx *fiber.Ctx) error {
-	fmt.Printf("svc point address ---2---: %p\n", &h.svc)
-
 	user := new(dto.UserRegister)
 	if err := ctx.BodyParser(user); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).SendString("Failed to parse JSON")
 	}
 
-	fmt.Println(user.Email)
 	token, err := h.svc.Register(user)
 	if err != nil {
+		log.Panic(err)
 		return ctx.Status(fiber.StatusInternalServerError).SendString("Failed to login")
 	}
 	//	return ctx.Status(http.StatusOK).JSON(dbuser)
 
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is register token: " + token,
+		"message": "this is register",
+		"token":   token,
 	})
 }
 
 func (h *UserHandler) Login(ctx *fiber.Ctx) error {
+	loginUser := new(dto.UserRegister)
+	if err := ctx.BodyParser(loginUser); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).SendString("Failed to parse JSON")
+	}
+
+	token, err := h.svc.Login(loginUser.Email, loginUser.Password)
+	if err != nil {
+
+		return ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{
+			"message": "Failed to login...",
+			"error":   "UserName or Password not correct",
+		})
+	}
+
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
 		"message": "this is Login...",
+		"token":   token,
 	})
 }
 
@@ -84,9 +102,25 @@ func (h *UserHandler) Verify(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) GetProfile(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is GetProfile...",
-	})
+	// user := new(dto.UserRegister)
+	// if err := ctx.BodyParser(user); err != nil {
+	// 	return ctx.Status(fiber.StatusBadRequest).SendString("Failed to parse JSON")
+	// }
+
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	log.Println("inputEmail： ", user.Email)
+	// dbuser, err := h.svc.FindUserByEmail("alex1@example.com")
+	dbuser, err := h.svc.FindUserByEmail(user.Email)
+
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).SendString("Failed to login")
+	}
+	return ctx.Status(http.StatusOK).JSON(dbuser)
+
+	// return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+	// 	"message": "this is register token: " + "token",
+	// })
+
 }
 
 func (h *UserHandler) CreateProfile(ctx *fiber.Ctx) error {

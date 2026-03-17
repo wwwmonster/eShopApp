@@ -19,3 +19,12 @@ func main() {
 	api.StartServer(config)
 	//	testing.Testing()
 }
+
+func main2() {
+	if os.Getenv("APP_ENV") == "dev" {
+		fmt.Println("11111")
+	} else {
+		fmt.Println("22222")
+	}
+
+}
