@@ -3,6 +3,8 @@ package service
 import (
 	"errors"
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/wwwmonster/eShopApp/go/v2/internal/domain"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/dto"
@@ -67,11 +69,61 @@ func (s UserService) Login(email string, password string) (string, error) {
 	return s.Auth.GenerateToken(dbuser.ID, dbuser.Email, dbuser.UserType)
 }
 
-func (s UserService) GetVerificationCode(e domain.User) (int, error) {
-	return 0, nil
+func (s UserService) isVerifiedUser(id uint) bool {
+	currentUder, err := s.Repo.FindUserById(id)
+	return err == nil && currentUder.Verified
 }
 
-func (s UserService) VerifyCode(id uint, code int) error {
+func (s UserService) GetVerificationCode(u domain.User) (int, error) {
+	if s.isVerifiedUser(u.ID) {
+		return 0, errors.New("user already verified")
+	}
+
+	code, err := s.Auth.GenerateCode()
+
+	if err != nil {
+		return 0, err
+	}
+	user := domain.User{
+		Expiry: time.Now().Add(30 * time.Minute),
+		Code:   strconv.Itoa(code),
+	}
+
+	_, err = s.Repo.UpdateUser(u.ID, user)
+	if err != nil {
+		return 0, errors.New("unable to update verification code")
+	}
+
+	return code, nil
+}
+
+func (s UserService) VerifyCode(id uint, code string) error {
+	if s.isVerifiedUser(id) {
+		return errors.New("user already verified")
+	}
+
+	user, err := s.Repo.FindUserById(id)
+	if err != nil {
+		return err
+	}
+
+	if user.Code != code {
+		return errors.New("verification code does not match")
+	}
+
+	if !time.Now().Before(user.Expiry) {
+		return errors.New("verification code expired")
+	}
+
+	updatedUser := domain.User{
+		Verified: true,
+	}
+
+	_, err = s.Repo.UpdateUser(id, updatedUser)
+	if err != nil {
+		return errors.New("unable to update verification code")
+	}
+
 	return nil
 }
 

@@ -90,14 +90,33 @@ func (h *UserHandler) Login(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) GetVerificationCode(ctx *fiber.Ctx) error {
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	code, err := h.svc.GetVerificationCode(user)
+	if err != nil {
+		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message": "unable to GetVerificationCode...",
+		})
+	}
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
 		"message": "this is GetVerificationCode...",
+		"code":    code,
 	})
 }
 
 func (h *UserHandler) Verify(ctx *fiber.Ctx) error {
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	codeStruct := new(dto.VerificationCodeInput)
+	if err := ctx.BodyParser(codeStruct); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).SendString("Failed to parse JSON")
+	}
+	err := h.svc.VerifyCode(user.ID, codeStruct.Code)
+	if err != nil {
+		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message": err.Error(),
+		})
+	}
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is Verify...",
+		"message": "tVerified...",
 	})
 }
 

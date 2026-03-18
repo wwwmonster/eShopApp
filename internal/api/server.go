@@ -26,7 +26,7 @@ func StartServer(config configs.AppConfig) {
 		os.Exit(0)
 	}
 
-	db.AutoMigrate(&domain.User{}, &domain.Address{})
+	db.AutoMigrate(&domain.User{}, &domain.Address{}, &domain.Cart{}, &domain.Order{})
 	log.Println("db connection: ", db)
 	auth := helper.SetupAuth(config.AppSecret, 2)
 
