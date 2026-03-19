@@ -18,7 +18,7 @@ type UserHandler struct {
 }
 
 func SetupUserRoutes(rh *rest.RestHandler) {
-	svc := service.UserService{Repo: repository.NewUserRepository(rh.Db), Auth: rh.Auth}
+	svc := service.UserService{Repo: repository.NewUserRepository(rh.Db), Auth: rh.Auth, Config: rh.Config}
 	svc1 := service.UserService{Repo: repository.NewUserRepositorySqlc(rh.ConnPool), Auth: rh.Auth}
 	fmt.Printf("svc point address ---1---: %p\n", &svc)
 	fmt.Printf("svc1 point address ---1---: %p\n", &svc1)
@@ -51,6 +51,7 @@ type UserData struct {
 
 func (h *UserHandler) Register(ctx *fiber.Ctx) error {
 	user := new(dto.UserRegister)
+
 	if err := ctx.BodyParser(user); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).SendString("Failed to parse JSON")
 	}
@@ -98,8 +99,8 @@ func (h *UserHandler) GetVerificationCode(ctx *fiber.Ctx) error {
 		})
 	}
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is GetVerificationCode...",
-		"code":    code,
+		"message": "this is GetVerificationCode..." + code,
+		// "code":    code,
 	})
 }
 
@@ -116,7 +117,7 @@ func (h *UserHandler) Verify(ctx *fiber.Ctx) error {
 		})
 	}
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "tVerified...",
+		"message": "Verified...",
 	})
 }
 

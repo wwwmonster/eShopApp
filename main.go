@@ -7,6 +7,7 @@ import (
 
 	"github.com/wwwmonster/eShopApp/go/v2/configs"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api"
+	"github.com/wwwmonster/eShopApp/go/v2/pkg/notification"
 )
 
 func main() {
@@ -20,11 +21,7 @@ func main() {
 	//	testing.Testing()
 }
 
-func main2() {
-	if os.Getenv("APP_ENV") == "dev" {
-		fmt.Println("11111")
-	} else {
-		fmt.Println("22222")
-	}
+func main1() {
+	notification.SendSMSTest("6477126661", "Hello, this eSHop")
 
 }

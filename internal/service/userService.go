@@ -2,19 +2,23 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
 
+	"github.com/wwwmonster/eShopApp/go/v2/configs"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/domain"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/dto"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/helper"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/repository"
+	"github.com/wwwmonster/eShopApp/go/v2/pkg/notification"
 )
 
 type UserService struct {
-	Repo repository.UserRepository
-	Auth helper.Auth
+	Repo   repository.UserRepository
+	Auth   helper.Auth
+	Config configs.AppConfig
 }
 
 func (s UserService) Register(input *dto.UserRegister) (string, error) {
@@ -74,15 +78,15 @@ func (s UserService) isVerifiedUser(id uint) bool {
 	return err == nil && currentUder.Verified
 }
 
-func (s UserService) GetVerificationCode(u domain.User) (int, error) {
+func (s UserService) GetVerificationCode(u domain.User) (string, error) {
 	if s.isVerifiedUser(u.ID) {
-		return 0, errors.New("user already verified")
+		return "", errors.New("user already verified")
 	}
 
 	code, err := s.Auth.GenerateCode()
 
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	user := domain.User{
 		Expiry: time.Now().Add(30 * time.Minute),
@@ -91,10 +95,19 @@ func (s UserService) GetVerificationCode(u domain.User) (int, error) {
 
 	_, err = s.Repo.UpdateUser(u.ID, user)
 	if err != nil {
-		return 0, errors.New("unable to update verification code")
+		return "", errors.New("unable to update verification code")
 	}
 
-	return code, nil
+	//send SMS
+	user, _ = s.Repo.FindUserById(u.ID)
+	log.Println("user.phone: ", user.Phone)
+	notificationClient := notification.NewNotificationClient(s.Config)
+	msg := fmt.Sprintf("Your verification code is %v", code)
+	if err = notificationClient.SendSMS(user.Phone, msg); err != nil {
+		return "", errors.New("Failed to send SMS")
+	}
+
+	return strconv.Itoa(code), nil
 }
 
 func (s UserService) VerifyCode(id uint, code string) error {

@@ -34,7 +34,9 @@ func StartServer(config configs.AppConfig) {
 	app.Get("/health", HealthCheck)
 
 	//	handlers.SetupUserRoutes(&restHandler)
-	setupRoutes(&rest.RestHandler{App: app, Db: db, ConnPool: GetEmsPgxConnPool(), Auth: auth})
+	setupRoutes(&rest.RestHandler{
+		App: app, Db: db, ConnPool: GetEmsPgxConnPool(), Auth: auth, Config: config,
+	})
 
 	if err := app.Listen(config.ServerPort); err != nil {
 		os.Exit(0)

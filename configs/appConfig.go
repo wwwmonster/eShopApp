@@ -3,6 +3,7 @@ package configs
 import (
 	"errors"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -12,6 +13,10 @@ type AppConfig struct {
 	Dsn        string
 	DbConnType string
 	AppSecret  string
+	AccountSid string
+	AuthToken  string
+	FromPhone  string
+	IsSendSMS  bool
 }
 
 const (
@@ -44,10 +49,34 @@ func SetupEnv() (cfg AppConfig, err error) {
 		return AppConfig{}, errors.New("env loading APP_SECRET failed")
 	}
 
+	accountSid := os.Getenv("ACCOUNT_SID")
+	if len(appSecret) < 1 {
+		return AppConfig{}, errors.New("env loading ACCOUNT_SID failed")
+	}
+
+	authToken := os.Getenv("AUTH_TOKEN")
+	if len(appSecret) < 1 {
+		return AppConfig{}, errors.New("env loading AUTH_TOKEN failed")
+	}
+
+	fromPhone := os.Getenv("FROM_PHONE")
+	if len(appSecret) < 1 {
+		return AppConfig{}, errors.New("env loading FROM_PHONE failed")
+	}
+
+	isSendSMS, err := strconv.ParseBool(os.Getenv("IS_SEND_NOTIFIACTION_CODE"))
+	if len(appSecret) < 1 || err != nil {
+		return AppConfig{}, errors.New("env loading IS_SEND_NOTIFIACTION_CODE failed")
+	}
+
 	cfg = AppConfig{
 		ServerPort: httpPort,
 		Dsn:        Dsn,
 		AppSecret:  appSecret,
+		AccountSid: accountSid,
+		AuthToken:  authToken,
+		FromPhone:  fromPhone,
+		IsSendSMS:  isSendSMS,
 	}
 	return cfg, nil
 }
