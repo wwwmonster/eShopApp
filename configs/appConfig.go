@@ -54,7 +54,7 @@ func SetupEnv() (cfg AppConfig, err error) {
 		return AppConfig{}, errors.New("env loading ACCOUNT_SID failed")
 	}
 
-	authToken := os.Getenv("AUTH_TOKEN")
+	authToken := os.Getenv("AUTH_TOKEN") + os.Getenv("AUTH_TOKEN_2")
 	if len(appSecret) < 1 {
 		return AppConfig{}, errors.New("env loading AUTH_TOKEN failed")
 	}
