@@ -152,8 +152,32 @@ func (s UserService) UpdateProfile(id uint, input any) error {
 	return nil
 }
 
-func (s UserService) BecomeBuyer(id uint, input any) (string, error) {
-	return "", nil
+func (s UserService) BecomeBuyer(id uint, input dto.SellerInput) (string, error) {
+	user, _ := s.Repo.FindUserById(id)
+	if user.UserType == domain.SELLER {
+		return "", errors.New("you have already joined seller program")
+	}
+
+	if user, err := s.Repo.UpdateUser(id, domain.User{
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		Phone:     input.PhoneNumber,
+		UserType:  domain.SELLER,
+	}); err != nil {
+		return "", errors.New("Faile to update user to seller")
+	} else {
+		if err := s.Repo.CreateBankAccount(
+			domain.BankAccount{
+				BankAccount: input.BankAccountNumber,
+				SwiftCode:   input.SwiftCode,
+				PaymentType: input.PaymentType,
+				UserId:      id,
+			}); err != nil {
+			return "", err
+		}
+		return s.Auth.GenerateToken(user.ID, user.Email, domain.SELLER)
+	}
+
 }
 
 func (s UserService) FindCart(id uint) ([]domain.Cart, error) {

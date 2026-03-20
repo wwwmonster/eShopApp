@@ -26,7 +26,9 @@ func StartServer(config configs.AppConfig) {
 		os.Exit(0)
 	}
 
-	db.AutoMigrate(&domain.User{}, &domain.Address{}, &domain.Cart{}, &domain.Order{})
+	if err = db.AutoMigrate(&domain.User{}, &domain.Address{}, &domain.Cart{}, &domain.Order{}, &domain.BankAccount{}); err != nil {
+		log.Fatal("error on running migration", err.Error())
+	}
 	log.Println("db connection: ", db)
 	auth := helper.SetupAuth(config.AppSecret, 2)
 

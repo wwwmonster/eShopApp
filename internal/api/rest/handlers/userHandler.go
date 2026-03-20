@@ -174,7 +174,22 @@ func (h *UserHandler) GetOrder(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) BecomeSeller(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is BecomeSeller...",
-	})
+
+	req := new(dto.SellerInput)
+	if err := ctx.BodyParser(req); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).SendString("Failed to parse Seller Input JSON")
+	}
+
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	if token, err := h.svc.BecomeBuyer(user.ID, *req); err != nil {
+		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+			"message": "Failed to BecomeSeller ...",
+		})
+	} else {
+		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+			"message": "BecomeSeller Successfully...",
+			"teken":   token,
+		})
+	}
+
 }

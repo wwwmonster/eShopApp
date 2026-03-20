@@ -30,7 +30,7 @@ func (r userRepository) CreateUser(usr domain.User) (domain.User, error) {
 func (r userRepository) FindUser(email string) (domain.User, error) {
 	var user domain.User
 
-	err := r.db.Preload("Address").First(&user, "email=?", email).Error
+	err := r.db.Preload("BankAccount").Preload("Address").First(&user, "email=?", email).Error
 	if err != nil {
 		log.Printf("find user error %v", err)
 		return domain.User{}, errors.New("user does not exist")
@@ -43,6 +43,7 @@ func (r userRepository) FindUserById(id uint) (domain.User, error) {
 	var user domain.User
 
 	err := r.db.Preload("Address").
+		Preload("BankAccount").
 		Preload("Cart").
 		Preload("Orders").
 		First(&user, id).Error
