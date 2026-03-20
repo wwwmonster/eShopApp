@@ -26,7 +26,9 @@ func StartServer(config configs.AppConfig) {
 		os.Exit(0)
 	}
 
-	if err = db.AutoMigrate(&domain.User{}, &domain.Address{}, &domain.Cart{}, &domain.Order{}, &domain.BankAccount{}); err != nil {
+	if err = db.AutoMigrate(&domain.User{}, &domain.Address{}, &domain.Cart{},
+		&domain.Order{}, &domain.BankAccount{},
+		&domain.Category{}, &domain.Product{}); err != nil {
 		log.Fatal("error on running migration", err.Error())
 	}
 	log.Println("db connection: ", db)
@@ -52,6 +54,7 @@ func setupRoutes(rh *rest.RestHandler) {
 	// transactions
 
 	// catalog
+	handlers.SetupCatalogRoutes(rh)
 }
 
 func HealthCheck(ctx *fiber.Ctx) error {
