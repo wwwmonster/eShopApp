@@ -13,6 +13,7 @@ import (
 	"github.com/wwwmonster/eShopApp/go/v2/internal/helper"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/repository"
 	"github.com/wwwmonster/eShopApp/go/v2/pkg/notification"
+	"gorm.io/gorm"
 )
 
 type UserService struct {
@@ -152,10 +153,70 @@ func (s UserService) UpdateProfile(id uint, input any) error {
 	return nil
 }
 
-func (s UserService) BecomeBuyer(id uint, input dto.SellerInput) (string, error) {
+func (s UserService) BecomeBuyer1(id uint, input dto.SellerInput) (string, error) {
 	user, _ := s.Repo.FindUserById(id)
 	if user.UserType == domain.SELLER {
-		return "", errors.New("you have already joined seller program")
+		// return "", errors.New("you have already joined seller program")
+	}
+	log.Println("-------BecomeBuyer-----1-----")
+	s.Repo.BecomeBuyer(&domain.User{
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		Phone:     input.PhoneNumber,
+		UserType:  domain.SELLER,
+	},
+		&domain.BankAccount{
+			BankAccount: input.BankAccountNumber,
+			SwiftCode:   input.SwiftCode,
+			PaymentType: input.PaymentType,
+			UserId:      id,
+		},
+	)
+	return s.Auth.GenerateToken(user.ID, user.Email, domain.SELLER)
+}
+
+func (s UserService) BecomeBuyer2(id uint, input dto.SellerInput) (string, error) {
+	log.Println("-------BecomeBuyer-----2-----")
+	user, _ := s.Repo.FindUserById(id)
+	if user.UserType == domain.SELLER {
+		// return "", errors.New("you have already joined seller program")
+	}
+
+	db := s.Repo.GetDb()
+	log.Printf("============service db %p/", db)
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		txRepo := repository.NewUserRepository(tx) // 👈 inject tx here
+		// txRepo := s.Repo.WithTx(tx) // 👈 inject tx here
+		if _, err := txRepo.UpdateUser(id, domain.User{
+			FirstName: input.FirstName,
+			LastName:  input.LastName,
+			Phone:     input.PhoneNumber,
+			UserType:  domain.SELLER,
+		}); err != nil {
+			return errors.New("Faile to update user to seller")
+		} else {
+			if err := txRepo.CreateBankAccount(
+				domain.BankAccount{
+					BankAccount: input.BankAccountNumber,
+					SwiftCode:   input.SwiftCode,
+					PaymentType: input.PaymentType,
+					UserId:      id,
+				}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return "", errors.New("Faile to update user to seller")
+	}
+	return s.Auth.GenerateToken(user.ID, user.Email, domain.SELLER)
+}
+
+func (s UserService) BecomeBuyer(id uint, input dto.SellerInput) (string, error) {
+
+	user, _ := s.Repo.FindUserById(id)
+	if user.UserType == domain.SELLER {
+		// return "", errors.New("you have already joined seller program")
 	}
 
 	if user, err := s.Repo.UpdateUser(id, domain.User{

@@ -6,6 +6,7 @@ import (
 
 	"github.com/wwwmonster/eShopApp/go/v2/internal/domain"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/sqlc/eshopsqlc"
+	"gorm.io/gorm"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -20,9 +21,9 @@ type userRepositorySqlc struct {
 // 	return &userRepositorySqlc{db: db}
 // }
 
-func NewUserRepositorySqlc(cconnPool *pgxpool.Pool) UserRepository {
-	return &userRepositorySqlc{connPool: cconnPool}
-}
+// func NewUserRepositorySqlc(cconnPool *pgxpool.Pool) UserRepository {
+// 	return &userRepositorySqlc{connPool: cconnPool}
+// }
 
 func (r userRepositorySqlc) CreateUser(usr domain.User) (domain.User, error) {
 	// err := r.db.Create(&usr).Error
@@ -130,5 +131,12 @@ func (r userRepositorySqlc) UpdateUser(id uint, u domain.User) (domain.User, err
 func (r userRepositorySqlc) CreateBankAccount(e domain.BankAccount) error {
 	// log.Println("CreateBankAccount...")
 	// return r.db.Create(&e).Error
+	return nil
+}
+
+func (r userRepositorySqlc) GetDb() *gorm.DB {
+	return nil
+}
+func (r userRepositorySqlc) BecomeBuyer(u *domain.User, e *domain.BankAccount) error {
 	return nil
 }

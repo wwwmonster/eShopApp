@@ -2,14 +2,20 @@ package repository
 
 import (
 	"github.com/wwwmonster/eShopApp/go/v2/internal/domain"
+	"gorm.io/gorm"
 )
 
 type UserRepository interface {
+	GetDb() *gorm.DB
 	CreateUser(usr domain.User) (domain.User, error)
 	FindUser(email string) (domain.User, error)
 	FindUserById(id uint) (domain.User, error)
 	UpdateUser(id uint, u domain.User) (domain.User, error)
 	CreateBankAccount(e domain.BankAccount) error
+
+	BecomeBuyer(u *domain.User, e *domain.BankAccount) error
+	WithTx(tx *gorm.DB) UserRepository
+
 	/*
 		// Cart
 		FindCartItems(uId uint) ([]domain.Cart, error)

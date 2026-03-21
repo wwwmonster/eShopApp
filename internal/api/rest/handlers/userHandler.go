@@ -19,9 +19,9 @@ type UserHandler struct {
 
 func SetupUserRoutes(rh *rest.RestHandler) {
 	svc := service.UserService{Repo: repository.NewUserRepository(rh.Db), Auth: rh.Auth, Config: rh.Config}
-	svc1 := service.UserService{Repo: repository.NewUserRepositorySqlc(rh.ConnPool), Auth: rh.Auth}
+	// svc1 := service.UserService{Repo: repository.NewUserRepositorySqlc(rh.ConnPool), Auth: rh.Auth}
 	fmt.Printf("svc point address ---1---: %p\n", &svc)
-	fmt.Printf("svc1 point address ---1---: %p\n", &svc1)
+	// fmt.Printf("svc1 point address ---1---: %p\n", &svc1)
 
 	app := rh.App
 	userHandler := UserHandler{svc: svc}

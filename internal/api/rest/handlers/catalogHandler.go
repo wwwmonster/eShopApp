@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest"
+	"github.com/wwwmonster/eShopApp/go/v2/internal/dto"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/repository"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/service"
 )
@@ -17,10 +18,10 @@ type CatalogHandler struct {
 }
 
 func SetupCatalogRoutes(rh *rest.RestHandler) {
-	svc := service.CatalogService{Repo: repository.NewUserRepository(rh.Db), Auth: rh.Auth, Config: rh.Config}
-	svc1 := service.CatalogService{Repo: repository.NewUserRepositorySqlc(rh.ConnPool), Auth: rh.Auth}
+	svc := service.CatalogService{Repo: repository.NewCatalogRepository(rh.Db), Auth: rh.Auth, Config: rh.Config}
+	// svc1 := service.CatalogService{Repo: repository.NewUserRepositorySqlc(rh.ConnPool), Auth: rh.Auth}
 	fmt.Printf("svc point address ---1---: %p\n", &svc)
-	fmt.Printf("svc1 point address ---1---: %p\n", &svc1)
+	// fmt.Printf("svc1 point address ---1---: %p\n", &svc1)
 
 	app := rh.App
 	handler := CatalogHandler{svc: svc}
@@ -29,8 +30,8 @@ func SetupCatalogRoutes(rh *rest.RestHandler) {
 	// listing products and categories
 	app.Get("/products", handler.GetProducts)
 	app.Get("/products/:id", handler.GetProduct)
-	// app.Get("/categories", handler.GetCategories)
-	// app.Get("/categories/:id", handler.GetCategoryById)
+	app.Get("/categories", handler.GetCategories)
+	app.Get("/categories/:id", handler.GetCategoryById)
 
 	// private
 	// manage products and categories
@@ -51,45 +52,43 @@ func SetupCatalogRoutes(rh *rest.RestHandler) {
 }
 func (h CatalogHandler) GetProducts(ctx *fiber.Ctx) error {
 
-	products, err := h.svc.GetProducts()
-	if err != nil {
-		return rest.ErrorMessage(ctx, 404, err)
-	}
+	// products, err := h.svc.GetProducts()
+	// if err != nil {
+	// 	return rest.ErrorMessage(ctx, 404, err)
+	// }
 
-	return rest.SuccessResponse(ctx, "products", products)
+	return rest.SuccessResponse(ctx, "products", nil)
 }
 
 func (h CatalogHandler) GetProduct(ctx *fiber.Ctx) error {
 
-	id, _ := strconv.Atoi(ctx.Params("id"))
+	// id, _ := strconv.Atoi(ctx.Params("id"))
 
-	product, err := h.svc.GetProductById(id)
-	if err != nil {
-		return rest.BadRequestError(ctx, "product not found")
-	}
+	// product, err := h.svc.GetProductById(id)
+	// if err != nil {
+	// 	return rest.BadRequestError(ctx, "product not found")
+	// }
 
-	return rest.SuccessResponse(ctx, "product", product)
+	return rest.SuccessResponse(ctx, "product", nil)
 }
 
 func (h CatalogHandler) GetCategories(ctx *fiber.Ctx) error {
-
-	// cats, err := h.svc.GetCategories()
-	// if err != nil {
-	// 	return rest.ErrorMessage(ctx, 404, err)
-	// }
-	// return rest.SuccessResponse(ctx, "categories", cats)
-	return rest.SuccessResponse(ctx, "categories", nil)
+	if cats, err := h.svc.GetCategories(); err != nil {
+		return rest.ErrorMessage(ctx, 404, err)
+	} else {
+		return rest.SuccessResponse(ctx, "categories", cats)
+	}
 }
 func (h CatalogHandler) GetCategoryById(ctx *fiber.Ctx) error {
 
-	// id, _ := strconv.Atoi(ctx.Params("id"))
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	log.Println(id)
 
-	// cat, err := h.svc.GetCategory(id)
-	// if err != nil {
-	// 	return rest.ErrorMessage(ctx, 404, err)
-	// }
-	// return rest.SuccessResponse(ctx, "category", cat)
-	return rest.SuccessResponse(ctx, "category", nil)
+	if cat, err := h.svc.GetCategory(id); err != nil {
+		return rest.ErrorMessage(ctx, 404, err)
+	} else {
+		return rest.SuccessResponse(ctx, "category", cat)
+	}
 }
 
 func (h CatalogHandler) CreateCategories(ctx *fiber.Ctx) error {
@@ -97,67 +96,56 @@ func (h CatalogHandler) CreateCategories(ctx *fiber.Ctx) error {
 
 	log.Println("user: ", user.Email)
 
-	// req := dto.CreateCategoryRequest{}
+	req := new(dto.CreateCategoryRequest)
 
-	// err := ctx.BodyParser(&req)
+	if err := ctx.BodyParser(&req); err != nil {
+		return rest.BadRequestError(ctx, "create category request is not valid")
+	}
 
-	// if err != nil {
-	// 	return rest.BadRequestError(ctx, "create category request is not valid")
-	// }
-
-	// err = h.svc.CreateCategory(req)
-
-	// if err != nil {
-	// 	return rest.InternalError(ctx, err)
-	// }
+	if err := h.svc.CreateCategory(req); err != nil {
+		return rest.InternalError(ctx, err)
+	}
 
 	return rest.SuccessResponse(ctx, "category created successfully", nil)
 }
 
 func (h CatalogHandler) EditCategory(ctx *fiber.Ctx) error {
 
-	// id, _ := strconv.Atoi(ctx.Params("id"))
+	id, _ := strconv.Atoi(ctx.Params("id"))
 
-	// req := dto.CreateCategoryRequest{}
+	req := new(dto.CreateCategoryRequest)
 
-	// err := ctx.BodyParser(&req)
+	if err := ctx.BodyParser(&req); err != nil {
+		return rest.BadRequestError(ctx, "update category request is not valid")
+	}
 
-	// if err != nil {
-	// 	return rest.BadRequestError(ctx, "update category request is not valid")
-	// }
-
-	// updatedCat, err := h.svc.EditCategory(id, req)
-
-	// if err != nil {
-	// 	return rest.InternalError(ctx, err)
-	// }
-
-	// return rest.SuccessResponse(ctx, "edit category", updatedCat)
-	return rest.SuccessResponse(ctx, "edit category", nil)
+	if updatedCat, err := h.svc.EditCategory(id, req); err != nil {
+		return rest.InternalError(ctx, err)
+	} else {
+		return rest.SuccessResponse(ctx, "edit category", updatedCat)
+	}
 }
 
 func (h CatalogHandler) DeleteCategory(ctx *fiber.Ctx) error {
-	// id, _ := strconv.Atoi(ctx.Params("id"))
-	// err := h.svc.DeleteCategory(id)
-	// if err != nil {
-	// 	return rest.InternalError(ctx, err)
-	// }
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	if err := h.svc.DeleteCategory(id); err != nil {
+		return rest.InternalError(ctx, err)
+	}
 	return rest.SuccessResponse(ctx, "category deleted successfully", nil)
 }
 
 func (h CatalogHandler) CreateProducts(ctx *fiber.Ctx) error {
 
-	// req := dto.CreateProductRequest{}
-	// err := ctx.BodyParser(&req)
-	// if err != nil {
-	// 	return rest.BadRequestError(ctx, "create product request is not valid")
-	// }
+	req := new(dto.CreateProductRequest)
+	if err := ctx.BodyParser(&req); err != nil {
+		return rest.BadRequestError(ctx, "create product request is not valid")
+	}
 
-	// user := h.svc.Auth.GetCurrentUser(ctx)
-	// err = h.svc.CreateProduct(req, user)
-	// if err != nil {
-	// 	return rest.InternalError(ctx, err)
-	// }
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	if err := h.svc.CreateProduct(req, user); err != nil {
+		return rest.InternalError(ctx, err)
+	}
+
 	return rest.SuccessResponse(ctx, "product created successfully", nil)
 }
 

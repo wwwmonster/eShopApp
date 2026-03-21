@@ -20,7 +20,7 @@ func BadRequestError(ctx *fiber.Ctx, msg string) error {
 	})
 }
 
-func SuccessResponse(ctx *fiber.Ctx, msg string, data interface{}) error {
+func SuccessResponse(ctx *fiber.Ctx, msg string, data any) error {
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
 		"message": msg,
 		"data":    data,

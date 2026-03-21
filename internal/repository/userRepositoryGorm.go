@@ -17,6 +17,10 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
+func (r userRepository) WithTx(tx *gorm.DB) UserRepository {
+	return userRepository{db: tx}
+}
+
 func (r userRepository) CreateUser(usr domain.User) (domain.User, error) {
 	err := r.db.Create(&usr).Error
 	if err != nil {
@@ -57,7 +61,7 @@ func (r userRepository) FindUserById(id uint) (domain.User, error) {
 
 func (r userRepository) UpdateUser(id uint, u domain.User) (domain.User, error) {
 	var user domain.User
-
+	log.Printf("============UpdateUser db %p/", r.db)
 	err := r.db.Model(&user).Clauses(clause.Returning{}).Where("id=?", id).Updates(u).Error
 	if err != nil {
 		log.Printf("error on update %v", err)
@@ -68,6 +72,27 @@ func (r userRepository) UpdateUser(id uint, u domain.User) (domain.User, error) 
 }
 
 func (r userRepository) CreateBankAccount(e domain.BankAccount) error {
+	log.Printf("============CreateBankAccount db %p/", r.db)
 	log.Println("CreateBankAccount...")
 	return r.db.Create(&e).Error
+}
+
+func (r userRepository) GetDb() *gorm.DB {
+	return r.db
+}
+
+func (r userRepository) BecomeBuyer(u *domain.User, e *domain.BankAccount) error {
+	if err := r.db.Transaction(func(tx *gorm.DB) error {
+		if _, err := r.UpdateUser(u.ID, *u); err != nil {
+			return errors.New("Faile to update user to seller")
+		} else {
+			if err := r.CreateBankAccount(*e); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return errors.New("Faile to update user to seller")
+	}
+	return nil
 }
