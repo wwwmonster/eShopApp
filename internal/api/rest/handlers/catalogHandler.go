@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest"
+	"github.com/wwwmonster/eShopApp/go/v2/internal/domain"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/dto"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/repository"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/service"
@@ -51,25 +52,20 @@ func SetupCatalogRoutes(rh *rest.RestHandler) {
 
 }
 func (h CatalogHandler) GetProducts(ctx *fiber.Ctx) error {
-
-	// products, err := h.svc.GetProducts()
-	// if err != nil {
-	// 	return rest.ErrorMessage(ctx, 404, err)
-	// }
-
-	return rest.SuccessResponse(ctx, "products", nil)
+	if products, err := h.svc.GetProducts(); err != nil {
+		return rest.ErrorMessage(ctx, 404, err)
+	} else {
+		return rest.SuccessResponse(ctx, "products", products)
+	}
 }
 
 func (h CatalogHandler) GetProduct(ctx *fiber.Ctx) error {
-
-	// id, _ := strconv.Atoi(ctx.Params("id"))
-
-	// product, err := h.svc.GetProductById(id)
-	// if err != nil {
-	// 	return rest.BadRequestError(ctx, "product not found")
-	// }
-
-	return rest.SuccessResponse(ctx, "product", nil)
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	if product, err := h.svc.GetProductById(id); err != nil {
+		return rest.BadRequestError(ctx, "product not found")
+	} else {
+		return rest.SuccessResponse(ctx, "product", product)
+	}
 }
 
 func (h CatalogHandler) GetCategories(ctx *fiber.Ctx) error {
@@ -80,7 +76,6 @@ func (h CatalogHandler) GetCategories(ctx *fiber.Ctx) error {
 	}
 }
 func (h CatalogHandler) GetCategoryById(ctx *fiber.Ctx) error {
-
 	id, _ := strconv.Atoi(ctx.Params("id"))
 	log.Println(id)
 
@@ -92,6 +87,7 @@ func (h CatalogHandler) GetCategoryById(ctx *fiber.Ctx) error {
 }
 
 func (h CatalogHandler) CreateCategories(ctx *fiber.Ctx) error {
+	log.Println("========1122----------")
 	user := h.svc.Auth.GetCurrentUser(ctx)
 
 	log.Println("user: ", user.Email)
@@ -150,50 +146,41 @@ func (h CatalogHandler) CreateProducts(ctx *fiber.Ctx) error {
 }
 
 func (h CatalogHandler) EditProduct(ctx *fiber.Ctx) error {
-
-	// id, _ := strconv.Atoi(ctx.Params("id"))
-	// req := dto.CreateProductRequest{}
-	// err := ctx.BodyParser(&req)
-	// if err != nil {
-	// 	return rest.BadRequestError(ctx, "edit product request is not valid")
-	// }
-	// user := h.svc.Auth.GetCurrentUser(ctx)
-	// product, err := h.svc.EditProduct(id, req, user)
-	// if err != nil {
-	// 	return rest.InternalError(ctx, err)
-	// }
-	// return rest.SuccessResponse(ctx, "edit product", product)
-	return rest.SuccessResponse(ctx, "edit product", nil)
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	req := new(dto.CreateProductRequest)
+	if err := ctx.BodyParser(&req); err != nil {
+		return rest.BadRequestError(ctx, "edit product request is not valid")
+	}
+	if product, err := h.svc.EditProduct(id, req, h.svc.Auth.GetCurrentUser(ctx)); err != nil {
+		return rest.InternalError(ctx, err)
+	} else {
+		return rest.SuccessResponse(ctx, "edit product", product)
+	}
 }
 
 func (h CatalogHandler) UpdateStock(ctx *fiber.Ctx) error {
-	// id, _ := strconv.Atoi(ctx.Params("id"))
-	// req := dto.UpdateStockRequest{}
-	// err := ctx.BodyParser(&req)
-	// if err != nil {
-	// 	return rest.BadRequestError(ctx, "update stock request is not valid")
-	// }
-	// user := h.svc.Auth.GetCurrentUser(ctx)
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	req := new(dto.UpdateStockRequest)
+	if err := ctx.BodyParser(&req); err != nil {
+		return rest.BadRequestError(ctx, "update stock request is not valid")
+	}
 
-	// product := domain.Product{
-	// 	ID:     uint(id),
-	// 	Stock:  uint(req.Stock),
-	// 	UserId: int(user.ID),
-	// }
+	product := domain.Product{
+		ID:     uint(id),
+		Stock:  uint(req.Stock),
+		UserId: int(h.svc.Auth.GetCurrentUser(ctx).ID),
+	}
 
-	// updatedProduct, err := h.svc.UpdateProductStock(product)
-
-	// return rest.SuccessResponse(ctx, "update stock ", updatedProduct)
-	return rest.SuccessResponse(ctx, "update stock ", nil)
+	if updatedProduct, err := h.svc.UpdateProductStock(product); err != nil {
+		return err
+	} else {
+		return rest.SuccessResponse(ctx, "update stock ", updatedProduct)
+	}
 }
 
 func (h CatalogHandler) DeleteProduct(ctx *fiber.Ctx) error {
-
-	// id, _ := strconv.Atoi(ctx.Params("id"))
-	// // need to provide user id to verify ownership
-	// user := h.svc.Auth.GetCurrentUser(ctx)
-	// err := h.svc.DeleteProduct(id, user)
-
-	// return rest.SuccessResponse(ctx, "Delete product ", err)
-	return rest.SuccessResponse(ctx, "Delete product ", nil)
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	// need to provide user id to verify ownership
+	err := h.svc.DeleteProduct(id, h.svc.Auth.GetCurrentUser(ctx))
+	return rest.SuccessResponse(ctx, "Delete product ", err)
 }

@@ -10,4 +10,9 @@ type CatalogRepository interface {
 	DeleteCategory(id int) error
 
 	CreateProduct(*domain.Product) error
+	FindProducts() ([]*domain.Product, error)
+	FindProductById(id int) (*domain.Product, error)
+	FindSellerProducts(id int) ([]*domain.Product, error)
+	EditProduct(e *domain.Product) (*domain.Product, error)
+	DeleteProduct(e *domain.Product) error
 }

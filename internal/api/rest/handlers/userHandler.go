@@ -77,7 +77,6 @@ func (h *UserHandler) Login(ctx *fiber.Ctx) error {
 
 	token, err := h.svc.Login(loginUser.Email, loginUser.Password)
 	if err != nil {
-
 		return ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{
 			"message": "Failed to login...",
 			"error":   "UserName or Password not correct",
@@ -98,6 +97,7 @@ func (h *UserHandler) GetVerificationCode(ctx *fiber.Ctx) error {
 			"message": "unable to GetVerificationCode...",
 		})
 	}
+	log.Println("v_Code: ", code)
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
 		"message": "this is GetVerificationCode..." + code,
 		// "code":    code,
@@ -122,25 +122,21 @@ func (h *UserHandler) Verify(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) GetProfile(ctx *fiber.Ctx) error {
-	// user := new(dto.UserRegister)
-	// if err := ctx.BodyParser(user); err != nil {
-	// 	return ctx.Status(fiber.StatusBadRequest).SendString("Failed to parse JSON")
-	// }
-
 	user := h.svc.Auth.GetCurrentUser(ctx)
-	log.Println("inputEmail： ", user.Email)
-	// dbuser, err := h.svc.FindUserByEmail("alex1@example.com")
-	dbuser, err := h.svc.FindUserByEmail(user.Email)
+	log.Println(user)
 
+	// call user service and perform get profile
+	profile, err := h.svc.GetProfile(user.ID)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).SendString("Failed to login")
+		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message": "unable to get profile",
+		})
 	}
-	return ctx.Status(http.StatusOK).JSON(dbuser)
 
-	// return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-	// 	"message": "this is register token: " + "token",
-	// })
-
+	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+		"message": "get profile",
+		"profile": profile,
+	})
 }
 
 func (h *UserHandler) CreateProfile(ctx *fiber.Ctx) error {

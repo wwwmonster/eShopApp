@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/wwwmonster/eShopApp/go/v2/configs"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest"
@@ -32,9 +33,16 @@ func StartServer(config configs.AppConfig) {
 		log.Fatal("error on running migration", err.Error())
 	}
 	log.Println("db connection: ", db)
+	app := fiber.New()
+	// cors configuration
+	c := cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3030, http://localhost:3000",
+		AllowHeaders: "Content-Type, Accept, Authorization",
+		AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+	})
+	app.Use(c)
 	auth := helper.SetupAuth(config.AppSecret, 2)
 
-	app := fiber.New()
 	app.Get("/health", HealthCheck)
 
 	//	handlers.SetupUserRoutes(&restHandler)

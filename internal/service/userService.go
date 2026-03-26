@@ -39,6 +39,16 @@ func (s UserService) Register(input *dto.UserRegister) (string, error) {
 	return s.Auth.GenerateToken(newUser.ID, newUser.Email, newUser.UserType)
 }
 
+func (s UserService) GetProfile(id uint) (*domain.User, error) {
+
+	user, err := s.Repo.FindUserById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func (s UserService) FindUserByEmail(email string) (*domain.User, error) {
 
 	// sqlcUserS := repository.NewUserRepositorySqlc()
@@ -62,16 +72,17 @@ func (s UserService) FindUserByEmail(email string) (*domain.User, error) {
 
 func (s UserService) Login(email string, password string) (string, error) {
 	dbuser, err := s.FindUserByEmail(email)
+
 	if err != nil {
 		return "", errors.New("user does not exist")
 	}
 
-	err = s.Auth.VerifyPassword(password, dbuser.Password)
-
-	if err != nil {
+	if err = s.Auth.VerifyPassword(password, dbuser.Password); err != nil {
 		return "", err
+	} else {
+		return s.Auth.GenerateToken(dbuser.ID, dbuser.Email, dbuser.UserType)
 	}
-	return s.Auth.GenerateToken(dbuser.ID, dbuser.Email, dbuser.UserType)
+
 }
 
 func (s UserService) isVerifiedUser(id uint) bool {
@@ -216,7 +227,7 @@ func (s UserService) BecomeBuyer(id uint, input dto.SellerInput) (string, error)
 
 	user, _ := s.Repo.FindUserById(id)
 	if user.UserType == domain.SELLER {
-		// return "", errors.New("you have already joined seller program")
+		return "", errors.New("you have already joined seller program")
 	}
 
 	if user, err := s.Repo.UpdateUser(id, domain.User{

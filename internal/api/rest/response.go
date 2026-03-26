@@ -26,3 +26,5 @@ func SuccessResponse(ctx *fiber.Ctx, msg string, data any) error {
 		"data":    data,
 	})
 }
+
+

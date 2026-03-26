@@ -55,13 +55,15 @@ func (a Auth) GenerateToken(id uint, email string, role string) (string, error) 
 }
 
 func (a Auth) VerifyPassword(pP string, hP string) error {
-	if len(pP) < 6 {
+
+	if len(pP) < 1 {
 		return errors.New("Password length should be at least 6 charactors... ")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(hP), []byte(pP)); err != nil {
 		return errors.New("Invalid Password")
 	}
+
 	return nil
 }
 
@@ -74,26 +76,31 @@ func (a Auth) VerifyToken(t string) (domain.User, error) {
 
 	tokenArr := strings.Split(t, " ")
 	if len(tokenArr) != 2 {
+		log.Panic("Invalid JWT token...cannot split ")
 		return domain.User{}, errors.New("Invalid JWT token...cannot split ")
 	}
 
 	if tokenArr[0] != "Bearer" {
+		log.Panic("Invalid JWT token... token 0 is not Bearer")
 		return domain.User{}, errors.New("Invalid JWT token... token 0 is not Bearer")
 	}
 
 	token, err := jwt.Parse(tokenArr[1], func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			log.Panic("unknown signing method")
 			return nil, fmt.Errorf("unknown signing method %v", token.Header)
 		}
 		return []byte(a.Secret), nil
 	})
 
 	if err != nil {
+		log.Panic("invalid signing method")
 		return domain.User{}, errors.New("invalid signing method")
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
+			log.Panic("token is expired")
 			return domain.User{}, errors.New("token is expired")
 		}
 
@@ -152,6 +159,7 @@ func (a Auth) AuthorizeSeller(ctx *fiber.Ctx) error {
 		ctx.Locals("user", user)
 		return ctx.Next()
 	} else {
+		log.Println("-----222--------")
 		return ctx.Status(401).JSON(&fiber.Map{
 			"message": "authorization failed",
 			"reason":  errors.New("please join seller program to manage products"),
