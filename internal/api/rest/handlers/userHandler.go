@@ -18,22 +18,28 @@ type UserHandler struct {
 }
 
 func SetupUserRoutes(rh *rest.RestHandler) {
-	svc := service.UserService{Repo: repository.NewUserRepository(rh.Db), Auth: rh.Auth, Config: rh.Config}
+	svc := service.UserService{
+		Repo:   repository.NewUserRepository(rh.Db),
+		CRepo:  repository.NewCatalogRepository(rh.Db),
+		Auth:   rh.Auth,
+		Config: rh.Config,
+	}
 	// svc1 := service.UserService{Repo: repository.NewUserRepositorySqlc(rh.ConnPool), Auth: rh.Auth}
 	fmt.Printf("svc point address ---1---: %p\n", &svc)
 	// fmt.Printf("svc1 point address ---1---: %p\n", &svc1)
 
 	app := rh.App
 	userHandler := UserHandler{svc: svc}
-	pubRoutes := app.Group("/users")
+	pubRoutes := app.Group("/")
 	pubRoutes.Post("/register", userHandler.Register)
 	pubRoutes.Post("/login", userHandler.Login)
 
-	pvtRoutes := pubRoutes.Group("/", rh.Auth.Authorize)
+	pvtRoutes := pubRoutes.Group("/users", rh.Auth.Authorize)
 	pvtRoutes.Get("/verify", userHandler.GetVerificationCode)
 	pvtRoutes.Post("/verify", userHandler.Verify)
 	pvtRoutes.Get("/profile", userHandler.GetProfile)
 	pvtRoutes.Post("/profile", userHandler.CreateProfile)
+	pvtRoutes.Patch("/profile", userHandler.UpdateProfile)
 
 	pvtRoutes.Post("/cart", userHandler.AddToCart)
 	pvtRoutes.Get("/cart", userHandler.GetCart)
@@ -123,7 +129,6 @@ func (h *UserHandler) Verify(ctx *fiber.Ctx) error {
 
 func (h *UserHandler) GetProfile(ctx *fiber.Ctx) error {
 	user := h.svc.Auth.GetCurrentUser(ctx)
-	log.Println(user)
 
 	// call user service and perform get profile
 	profile, err := h.svc.GetProfile(user.ID)
@@ -140,21 +145,65 @@ func (h *UserHandler) GetProfile(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) CreateProfile(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is CreateProfile...",
-	})
+	user := h.svc.Auth.GetCurrentUser(ctx)
+
+	req := new(dto.ProfileInput)
+
+	if err := ctx.BodyParser(req); err != nil {
+		return rest.BadRequestError(ctx, "Failed to parse JSON")
+	}
+	if err := h.svc.CreateProfile(user.ID, *req); err != nil {
+		return rest.ErrorMessage(ctx, 404, err)
+	} else {
+		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+			"message": "create profile",
+			"profile": req,
+		})
+	}
+}
+
+func (h *UserHandler) UpdateProfile(ctx *fiber.Ctx) error {
+	user := h.svc.Auth.GetCurrentUser(ctx)
+
+	// call user service and perform get profile
+	profile, err := h.svc.GetProfile(user.ID)
+	if err != nil {
+		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message": "unable to get profile",
+		})
+	} else {
+		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+			"message": "update profile",
+			"profile": profile,
+		})
+	}
 }
 
 func (h *UserHandler) AddToCart(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is AddToCart...",
-	})
+	req := new(dto.CreateCartRequest)
+	if err := ctx.BodyParser(req); err != nil {
+		return rest.BadRequestError(ctx, "please provide a valid product and qty")
+	}
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	// call user service and perform create cart
+	cartItems, err := h.svc.CreateCart(req, user)
+	if err != nil {
+		return rest.InternalError(ctx, err)
+	}
+	return rest.SuccessResponse(ctx, "cart created successfully", cartItems)
+
 }
 
 func (h *UserHandler) GetCart(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is GetCart...",
-	})
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	if cart, err := h.svc.FindCart(user.ID); err != nil {
+		return rest.InternalError(ctx, err)
+	} else {
+		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+			"message": "get cart",
+			"cart":    cart,
+		})
+	}
 }
 
 func (h *UserHandler) GetOrders(ctx *fiber.Ctx) error {

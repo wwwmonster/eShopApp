@@ -20,6 +20,7 @@ type UserService struct {
 	Repo   repository.UserRepository
 	Auth   helper.Auth
 	Config configs.AppConfig
+	CRepo  repository.CatalogRepository
 }
 
 func (s UserService) Register(input *dto.UserRegister) (string, error) {
@@ -47,6 +48,83 @@ func (s UserService) GetProfile(id uint) (*domain.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (s UserService) CreateProfile(id uint, input dto.ProfileInput) error {
+
+	// update user
+	user, err := s.Repo.FindUserById(id)
+
+	if err != nil {
+		return err
+	}
+	if input.FirstName != "" {
+		user.FirstName = input.FirstName
+	}
+	if input.LastName != "" {
+		user.LastName = input.LastName
+	}
+
+	_, err = s.Repo.UpdateUser(id, user)
+
+	if err != nil {
+		return err
+	}
+
+	// create address
+	address := domain.Address{
+		AddressLine1: input.AddressInput.AddressLine1,
+		AddressLine2: input.AddressInput.AddressLine2,
+		City:         input.AddressInput.City,
+		Country:      input.AddressInput.Country,
+		PostCode:     input.AddressInput.PostCode,
+		UserId:       id,
+	}
+
+	err = s.Repo.CreateProfile(address)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s UserService) UpdateProfile(id uint, input dto.ProfileInput) error {
+	// update user
+	user, err := s.Repo.FindUserById(id)
+
+	if err != nil {
+		return err
+	}
+	if input.FirstName != "" {
+		user.FirstName = input.FirstName
+	}
+	if input.LastName != "" {
+		user.LastName = input.LastName
+	}
+
+	_, err = s.Repo.UpdateUser(id, user)
+
+	if err != nil {
+		return err
+	}
+
+	// create address
+	address := domain.Address{
+		AddressLine1: input.AddressInput.AddressLine1,
+		AddressLine2: input.AddressInput.AddressLine2,
+		City:         input.AddressInput.City,
+		Country:      input.AddressInput.Country,
+		PostCode:     input.AddressInput.PostCode,
+		UserId:       id,
+	}
+
+	err = s.Repo.UpdateProfile(address)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s UserService) FindUserByEmail(email string) (*domain.User, error) {
@@ -152,18 +230,6 @@ func (s UserService) VerifyCode(id uint, code string) error {
 	return nil
 }
 
-func (s UserService) CreateProfile(id uint, input any) error {
-	return nil
-}
-
-func (s UserService) GetProdile(id uint) (*domain.User, error) {
-	return nil, nil
-}
-
-func (s UserService) UpdateProfile(id uint, input any) error {
-	return nil
-}
-
 func (s UserService) BecomeBuyer1(id uint, input dto.SellerInput) (string, error) {
 	user, _ := s.Repo.FindUserById(id)
 	if user.UserType == domain.SELLER {
@@ -187,14 +253,12 @@ func (s UserService) BecomeBuyer1(id uint, input dto.SellerInput) (string, error
 }
 
 func (s UserService) BecomeBuyer2(id uint, input dto.SellerInput) (string, error) {
-	log.Println("-------BecomeBuyer-----2-----")
 	user, _ := s.Repo.FindUserById(id)
 	if user.UserType == domain.SELLER {
 		// return "", errors.New("you have already joined seller program")
 	}
 
 	db := s.Repo.GetDb()
-	log.Printf("============service db %p/", db)
 	if err := db.Transaction(func(tx *gorm.DB) error {
 		txRepo := repository.NewUserRepository(tx) // 👈 inject tx here
 		// txRepo := s.Repo.WithTx(tx) // 👈 inject tx here
@@ -253,11 +317,46 @@ func (s UserService) BecomeBuyer(id uint, input dto.SellerInput) (string, error)
 }
 
 func (s UserService) FindCart(id uint) ([]domain.Cart, error) {
-	return nil, nil
+	return s.Repo.FindCartItems(id)
 }
 
-func (s UserService) CreateCart(input any, u domain.User) ([]domain.Cart, error) {
-	return nil, nil
+func (s UserService) CreateCart(input *dto.CreateCartRequest, u domain.User) ([]domain.Cart, error) {
+	cart, _ := s.Repo.FindCartItem(u.ID, input.ProductId)
+	if cart.ID > 0 {
+		if input.ProductId < 1 {
+			return nil, errors.New("please provide a valid product id")
+		}
+		if input.Qty < 1 {
+			if err := s.Repo.DeleteCartById(cart.ID); err != nil {
+				log.Printf("Error on deleting cart item %v", err)
+				return nil, errors.New("error on deleting cart item")
+			}
+		} else {
+			cart.Qty = input.Qty
+			if err := s.Repo.UpdateCart(cart); err != nil {
+				return nil, errors.New("error on updating cart item")
+			}
+		}
+	} else {
+		product, _ := s.CRepo.FindProductById(int(input.ProductId))
+		if product.ID == 0 {
+			return nil, errors.New("product not found to create cart item")
+		}
+		if err := s.Repo.CreateCart(domain.Cart{
+			UserId:    u.ID,
+			ProductId: input.ProductId,
+			Name:      product.Name,
+			ImageUrl:  product.ImageUrl,
+			Qty:       input.Qty,
+			Price:     product.Price,
+			SellerId:  uint(product.UserId),
+		}); err != nil {
+			return nil, errors.New("error on creating cart item")
+		}
+
+	}
+
+	return s.Repo.FindCartItems(u.ID)
 }
 
 func (s UserService) CreateOrder(u domain.User) (int, error) {

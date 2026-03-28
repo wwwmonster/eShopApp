@@ -16,14 +16,19 @@ type UserRepository interface {
 	BecomeBuyer(u *domain.User, e *domain.BankAccount) error
 	WithTx(tx *gorm.DB) UserRepository
 
+	FindCartItems(uId uint) ([]domain.Cart, error)
+	FindCartItem(uId uint, pId uint) (domain.Cart, error)
+	CreateCart(c domain.Cart) error
+	UpdateCart(c domain.Cart) error
+	DeleteCartById(id uint) error
+	DeleteCartItems(uId uint) error
+	UpdateProfile(e domain.Address) error
+	CreateProfile(e domain.Address) error
 	/*
 		// Cart
-		FindCartItems(uId uint) ([]domain.Cart, error)
-		FindCartItem(uId uint, pId uint) (domain.Cart, error)
-		CreateCart(c domain.Cart) error
-		UpdateCart(c domain.Cart) error
-		DeleteCartById(id uint) error
-		DeleteCartItems(uId uint) error
+
+
+
 
 		// Order
 		CreateOrder(o domain.Order) error

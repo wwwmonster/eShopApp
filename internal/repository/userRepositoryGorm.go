@@ -96,3 +96,57 @@ func (r userRepository) BecomeBuyer(u *domain.User, e *domain.BankAccount) error
 	}
 	return nil
 }
+
+func (r userRepository) FindCartItem(uId uint, pId uint) (domain.Cart, error) {
+	cartItem := domain.Cart{}
+	err := r.db.Where("user_id=? AND product_id=?", uId, pId).First(&cartItem).Error
+	return cartItem, err
+}
+
+// CreateCart implements [UserRepository].
+func (r userRepository) CreateCart(c domain.Cart) error {
+	return r.db.Create(&c).Error
+}
+
+// DeleteCartById implements [UserRepository].
+func (r userRepository) DeleteCartById(id uint) error {
+	return r.db.Delete(&domain.Cart{}, id).Error
+}
+
+// DeleteCartItems implements [UserRepository].
+func (r userRepository) DeleteCartItems(uId uint) error {
+	return r.db.Where("user_id=", uId).Delete(&domain.Cart{}).Error
+}
+
+// UpdateCart implements [UserRep`ository].
+func (r userRepository) UpdateCart(c domain.Cart) error {
+
+	// return r.db.Save(&c).Error
+	var cart domain.Cart
+	return r.db.Model(&cart).Clauses(clause.Returning{}).Where("id", c.ID).Updates(c).Error
+}
+
+func (r userRepository) FindCartItems(uId uint) ([]domain.Cart, error) {
+	var carts []domain.Cart
+	err := r.db.Where("user_id=?", uId).Find(&carts).Error
+	return carts, err
+}
+
+func (r userRepository) CreateProfile(e domain.Address) error {
+	if err := r.db.Create(&e).Error; err != nil {
+		log.Printf("error on creating profile with address %v", err)
+		return errors.New("failed to create profile")
+	} else {
+		return nil
+	}
+}
+
+func (r userRepository) UpdateProfile(e domain.Address) error {
+	err := r.db.Where("user_id=?", e.UserId).Updates(e).Error
+	if err != nil {
+		log.Printf("error on update profile with address %v", err)
+		return errors.New("failed to create profile")
+	}
+	return nil
+
+}

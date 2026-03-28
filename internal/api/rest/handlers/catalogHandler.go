@@ -87,13 +87,9 @@ func (h CatalogHandler) GetCategoryById(ctx *fiber.Ctx) error {
 }
 
 func (h CatalogHandler) CreateCategories(ctx *fiber.Ctx) error {
-	log.Println("========1122----------")
 	user := h.svc.Auth.GetCurrentUser(ctx)
-
 	log.Println("user: ", user.Email)
-
 	req := new(dto.CreateCategoryRequest)
-
 	if err := ctx.BodyParser(&req); err != nil {
 		return rest.BadRequestError(ctx, "create category request is not valid")
 	}
