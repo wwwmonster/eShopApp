@@ -16,9 +16,9 @@ type User struct {
 	Password    string      `json:"password"`
 	Code        string      `json:"code"`
 	Expiry      time.Time   `json:"expiry"`
-	Address     Address     `json:"address"` // relation
+	Address     *Address    `json:"address,omitempty"` // relation
 	BankAccount BankAccount `json:"bankaccount"`
-	Cart        Cart        `json:"cart"`    // relation
+	Carts       []Cart      `json:"cart"`    // relation
 	Orders      []Order     `json:"orders"`  // relation
 	Payments    []Payment   `json:"payment"` // relation
 	Verified    bool        `json:"verified" gorm:"default:false"`

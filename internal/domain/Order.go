@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type Order struct {
-	D              uint        `gorm:"PrimaryKey" json:"id"`
+	ID             uint        `gorm:"PrimaryKey" json:"id"`
 	UserId         uint        `json:"user_id"`
 	Status         string      `json:"status"`
 	Amount         float64     `json:"amount"`

@@ -24,19 +24,9 @@ type UserRepository interface {
 	DeleteCartItems(uId uint) error
 	UpdateProfile(e domain.Address) error
 	CreateProfile(e domain.Address) error
-	/*
-		// Cart
 
-
-
-
-		// Order
-		CreateOrder(o domain.Order) error
-		FindOrders(uId uint) ([]domain.Order, error)
-		FindOrderById(id uint, uId uint) (domain.Order, error)
-
-		// Profile
-		CreateProfile(e domain.Address) error
-		UpdateProfile(e domain.Address) error
-	*/
+	// Order
+	CreateOrder(o domain.Order) error
+	FindOrders(uId uint) ([]domain.Order, error)
+	FindOrderById(id uint, uId uint) (domain.Order, error)
 }

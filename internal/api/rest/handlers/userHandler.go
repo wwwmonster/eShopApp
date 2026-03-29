@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest"
@@ -43,8 +45,11 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 
 	pvtRoutes.Post("/cart", userHandler.AddToCart)
 	pvtRoutes.Get("/cart", userHandler.GetCart)
-	pvtRoutes.Get("/order", userHandler.Register)
-	pvtRoutes.Get("/order/:id", userHandler.Register)
+	pvtRoutes.Delete("/cart", userHandler.DeleteCart)
+
+	pvtRoutes.Get("/order", userHandler.GetOrders)
+	pvtRoutes.Post("/order", userHandler.CreateOrder)
+	pvtRoutes.Get("/order/:id", userHandler.GetOrder)
 
 	pvtRoutes.Post("/become-seller", userHandler.BecomeSeller)
 }
@@ -137,7 +142,6 @@ func (h *UserHandler) GetProfile(ctx *fiber.Ctx) error {
 			"message": "unable to get profile",
 		})
 	}
-
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
 		"message": "get profile",
 		"profile": profile,
@@ -196,7 +200,7 @@ func (h *UserHandler) AddToCart(ctx *fiber.Ctx) error {
 
 func (h *UserHandler) GetCart(ctx *fiber.Ctx) error {
 	user := h.svc.Auth.GetCurrentUser(ctx)
-	if cart, err := h.svc.FindCart(user.ID); err != nil {
+	if cart, err := h.svc.Repo.FindCartItems(user.ID); err != nil {
 		return rest.InternalError(ctx, err)
 	} else {
 		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
@@ -206,16 +210,56 @@ func (h *UserHandler) GetCart(ctx *fiber.Ctx) error {
 	}
 }
 
+func (h *UserHandler) DeleteCart(ctx *fiber.Ctx) error {
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	if err := h.svc.Repo.DeleteCartItems(user.ID); err != nil {
+		return rest.InternalError(ctx, err)
+	} else {
+		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+			"message": "cart deleted successfully",
+		})
+	}
+}
+
+func (h *UserHandler) CreateOrder(ctx *fiber.Ctx) error {
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	if orderRef, err := h.svc.CreateOrder(user); err != nil {
+		return rest.InternalError(ctx, errors.New("failed to create order"))
+	} else {
+		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+			"message": "this is GetOrder...",
+			"order":   orderRef,
+		})
+	}
+}
+
 func (h *UserHandler) GetOrders(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is GetOrders...",
-	})
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	if orders, err := h.svc.GetOrders(user); err != nil {
+		return rest.InternalError(ctx, errors.New("failed to get orders"))
+	} else {
+		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+			"message": "get orders successfully...",
+			"orders":  orders,
+		})
+	}
 }
 
 func (h *UserHandler) GetOrder(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "this is GetOrder...",
-	})
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	orderIdStr := ctx.Params("id")
+	orderId, err := strconv.Atoi(orderIdStr)
+	if err != nil {
+		return rest.BadRequestError(ctx, "invalid order id")
+	}
+	if order, err := h.svc.GetOrderById(uint(orderId), user.ID); err != nil {
+		return rest.InternalError(ctx, errors.New("failed to get order"))
+	} else {
+		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+			"message": "get order successfully...",
+			"order":   order,
+		})
+	}
 }
 
 func (h *UserHandler) BecomeSeller(ctx *fiber.Ctx) error {
