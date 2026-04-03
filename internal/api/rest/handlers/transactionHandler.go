@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"net/http"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/wwwmonster/eShopApp/go/v2/configs"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest"
@@ -60,14 +58,14 @@ func (h *TransactionHandler) MakePayment(ctx *fiber.Ctx) error {
 	// pubKey := h.Config.PubKey
 
 	// // 2. Check if user has an active payment session then return the payment url
-	activePayment, err := h.Svc.GetActivePayment(user.ID)
-	if activePayment.ID > 0 {
-		return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-			"message": "create payment",
-			"pubKey":  pubKey,
-			"secret":  activePayment.ClientSecret,
-		})
-	}
+	// activePayment, err := h.Svc.GetActivePayment(user.ID)
+	// if activePayment.ID > 0 {
+	// 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+	// 		"message": "create payment",
+	// 		"pubKey":  pubKey,
+	// 		"secret":  activePayment.ClientSecret,
+	// 	})
+	// }
 
 	// //3. call user service get cart data to aggregate the total amount and collect payment
 	// _, amount, err := h.UserSvc.FindCart(user.ID)
