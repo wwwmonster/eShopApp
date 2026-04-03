@@ -53,7 +53,7 @@ func SetupTransactionRoutes(as *rest.RestHandler) {
 func (h *TransactionHandler) MakePayment(ctx *fiber.Ctx) error {
 
 	//1 grab authorized user
-	user := h.Svc.Auth.GetCurrentUser(ctx)
+	// user := h.Svc.Auth.GetCurrentUser(ctx)
 
 	// pubKey := h.Config.PubKey
 
