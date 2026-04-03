@@ -15,6 +15,7 @@ import (
 	"github.com/wwwmonster/eShopApp/go/v2/internal/api/rest/handlers"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/domain"
 	"github.com/wwwmonster/eShopApp/go/v2/internal/helper"
+	"github.com/wwwmonster/eShopApp/go/v2/pkg/payment"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -27,10 +28,17 @@ func StartServer(config configs.AppConfig) {
 		os.Exit(0)
 	}
 
-	if err = db.AutoMigrate(&domain.User{}, &domain.Address{}, &domain.Cart{},
-		&domain.Order{}, &domain.OrderItem{},
+	if err = db.AutoMigrate(
+		&domain.User{},
+		&domain.Address{},
+		&domain.Cart{},
+		&domain.Order{},
+		&domain.OrderItem{},
 		&domain.BankAccount{},
-		&domain.Category{}, &domain.Product{}); err != nil {
+		&domain.Category{},
+		&domain.Product{},
+		&domain.Payment{},
+	); err != nil {
 		log.Fatal("error on running migration", err.Error())
 	}
 	log.Println("db connection: ", db)
@@ -46,9 +54,16 @@ func StartServer(config configs.AppConfig) {
 
 	app.Get("/health", HealthCheck)
 
+	paymentClient := payment.NewPaymentClient(config.StripeSecret)
+
 	//	handlers.SetupUserRoutes(&restHandler)
 	setupRoutes(&rest.RestHandler{
-		App: app, Db: db, ConnPool: GetEmsPgxConnPool(), Auth: auth, Config: config,
+		App:           app,
+		Db:            db,
+		ConnPool:      GetEmsPgxConnPool(),
+		Auth:          auth,
+		Config:        config,
+		PaymentClient: paymentClient,
 	})
 
 	if err := app.Listen(config.ServerPort); err != nil {
@@ -61,7 +76,7 @@ func setupRoutes(rh *rest.RestHandler) {
 	handlers.SetupUserRoutes(rh)
 
 	// transactions
-
+	handlers.SetupTransactionRoutes(rh)
 	// catalog
 	handlers.SetupCatalogRoutes(rh)
 }

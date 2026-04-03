@@ -9,14 +9,17 @@ import (
 )
 
 type AppConfig struct {
-	ServerPort string
-	Dsn        string
-	DbConnType string
-	AppSecret  string
-	AccountSid string
-	AuthToken  string
-	FromPhone  string
-	IsSendSMS  bool
+	ServerPort   string
+	Dsn          string
+	DbConnType   string
+	AppSecret    string
+	AccountSid   string
+	AuthToken    string
+	FromPhone    string
+	IsSendSMS    bool
+	StripeSecret string
+	SuccessUrl   string
+	CancelUrl    string
 }
 
 const (
@@ -69,14 +72,32 @@ func SetupEnv() (cfg AppConfig, err error) {
 		return AppConfig{}, errors.New("env loading IS_SEND_NOTIFIACTION_CODE failed")
 	}
 
+	stripeSecret := os.Getenv("STRIPE_SECRET")
+	if len(stripeSecret) < 1 {
+		return AppConfig{}, errors.New("env loading STRIPE_SECRET failed")
+	}
+
+	successUrl := os.Getenv("SUCCESS_URL")
+	if len(successUrl) < 1 {
+		return AppConfig{}, errors.New("env loading SUCCESS_URL failed")
+	}
+
+	cancelUrl := os.Getenv("CANCEL_URL")
+	if len(cancelUrl) < 1 {
+		return AppConfig{}, errors.New("env loading CANCEL_URL failed")
+	}
+
 	cfg = AppConfig{
-		ServerPort: httpPort,
-		Dsn:        Dsn,
-		AppSecret:  appSecret,
-		AccountSid: accountSid,
-		AuthToken:  authToken,
-		FromPhone:  fromPhone,
-		IsSendSMS:  isSendSMS,
+		ServerPort:   httpPort,
+		Dsn:          Dsn,
+		AppSecret:    appSecret,
+		AccountSid:   accountSid,
+		AuthToken:    authToken,
+		FromPhone:    fromPhone,
+		IsSendSMS:    isSendSMS,
+		StripeSecret: stripeSecret,
+		SuccessUrl:   successUrl,
+		CancelUrl:    cancelUrl,
 	}
 	return cfg, nil
 }
